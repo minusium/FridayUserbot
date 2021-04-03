@@ -70,16 +70,11 @@ async def packinfo(client, message):
         await pablo.edit("Please Reply To Sticker...")
         return
     Hell = get_text(message)
-    name = ""
+    name = message.from_user.first_name
     pack = 1
-    nm = message.from_user.username
-    if nm:
-        nam = message.from_user.username
-        name = nam[1:]
-    else:
-        name = message.from_user.first_name
-    packname = f"@{nm} Kang Pack {pack}"
-    packshortname = f"FRIDAY_{message.from_user.id}_{pack}"
+    nm = name
+    packname = f"{pack} استیکر ممد"
+    packshortname = f"MMD_STICKER_PACK_{message.from_user.id}_{pack}"
     non = [None, "None"]
     emoji = "😁"
     try:
@@ -139,8 +134,8 @@ async def packinfo(client, message):
         messi = (await client.get_history("stickers", 1))[0]
         while limit in messi.text:
             pack += 1
-            packname = f"@{nm} Kang Pack {pack}"
-            packshortname = f"FRIDAY_{message.from_user.id}_{pack}"
+            packname = f"{pack} استیکر ممد"
+            packshortname = f"MMD_STICKER_PACK_{message.from_user.id}_{pack}"
             if is_anim:
                 packshortname +="_animated"
                 packname += " Animated"
