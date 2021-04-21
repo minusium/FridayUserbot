@@ -101,7 +101,7 @@ async def run_bot():
         Friday4.me = await Friday4.get_me()
         Friday4.has_a_bot = True if bot else False
         
-    Friday.send_message(Config.LOG_GRP, "Friday is starting...");
+    await Friday.send_message(Config.LOG_GRP, "Friday is starting...");
     
     if Config.PLUGIN_CHANNEL:
         await fetch_plugins_from_channel()
@@ -111,7 +111,7 @@ async def run_bot():
             load_plugin(nm)
         except Exception as e:
             logging.error("[USER] - Failed To Load : " + f"{nm} - {str(e)}")
-            Friday.send_message(Config.LOG_GRP, "[USER] - Failed To Load : " + f"{nm} - {str(e)}");
+            await Friday.send_message(Config.LOG_GRP, "[USER] - Failed To Load : " + f"{nm} - {str(e)}");
     if Config.LOAD_UNOFFICIAL_PLUGINS:
         await load_unofficial_modules()
     full_info = f"""Friday Based On Pyrogram V{__version__}
@@ -120,7 +120,7 @@ Friday Version : {friday_version}
 You Can Visit @FridaySupportOfficial For Updates And @FridayChat For Any Query / Help!
 """
 
-    Friday.send_message(Config.LOG_GRP, "Friday is up!");
+    await Friday.send_message(Config.LOG_GRP, "Friday is up!");
     
     logging.info(full_info)
     await pyrogram.idle()
