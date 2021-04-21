@@ -11,7 +11,7 @@ from main_startup.helper_func.basic_helpers import edit_or_reply, get_text
 
 
 @friday_on_cmd(
-    ["spam", "ultraspam"],
+    ["spam", "sp"],
     is_official=False,
     cmd_help={
         "help": "Spam Message Multiple Times!",

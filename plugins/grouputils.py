@@ -31,7 +31,7 @@ from main_startup.helper_func.plugin_helpers import (
 
 
 @friday_on_cmd(
-    ["silentpin"],
+    ["silentpin", "sp"],
     only_if_admin=True,
     cmd_help={
         "help": "Pin Message Without Sending Notification To Members!",
@@ -56,7 +56,7 @@ async def spin(client, message):
 
 
 @friday_on_cmd(
-    ["pinloud", "pin"],
+    ["pinloud", "pin", "p"],
     only_if_admin=True,
     cmd_help={
         "help": "Pin Message With Sending Notification To Members!",

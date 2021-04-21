@@ -269,10 +269,7 @@ async def deezer(client, message):
 **Song Name :** {urlhp.get("title")}
 **Duration :** {urlhp.get('duration')} Seconds
 **Artist :** {polu.get("name")}
-
-Music Downloaded And Uploaded By Friday Userbot
-
-Get Your Friday From @FridayOT"""
+"""
     await pablo.edit(f"`Downloaded {sname}! Now Uploading Song...`")
     await client.send_audio(
         message.chat.id,

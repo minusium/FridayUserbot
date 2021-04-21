@@ -103,7 +103,7 @@ async def packinfo(client, message):
         is_anim = message.reply_to_message.sticker.is_animated
         if is_anim:
             packshortname += "_animated"
-            packname += " Animated"
+            packname += " انیمیشنی"
         if message.reply_to_message.sticker.mime_type == "application/x-tgsticker":
             file_name = await message.reply_to_message.download("AnimatedSticker.tgs")
         else:
@@ -116,7 +116,7 @@ async def packinfo(client, message):
         if message.reply_to_message.document.mime_type == "application/x-tgsticker":
             is_anim = True
             packshortname += "_animated"
-            packname += " Animated"
+            packname += " انیمیشنی"
             file_name = await message.reply_to_message.download("AnimatedSticker.tgs")
     else:
         cool = await convert_to_image(message, client)
@@ -148,7 +148,7 @@ async def packinfo(client, message):
             packshortname = f"MMD_STICKER_PACK_{message.from_user.id}_{pack}"
             if is_anim:
                 packshortname += "_animated"
-                packname += " Animated"
+                packname += " انیمیشنی"
             await client.send_message("stickers", packshortname)
             await asyncio.sleep(0.2)
             messi = (await client.get_history("stickers", 1))[0]
@@ -171,7 +171,7 @@ async def packinfo(client, message):
                 await asyncio.sleep(0.5)
                 await client.send_message("stickers", packshortname)
                 await pablo.edit(
-                    f"Sticker Added To Your Pack With Emoji - {emoji}. You Can Find It [Here](https://t.me/addstickers/{packshortname})"
+                    f"`استیکر با اموجی {emoji} به پک شما اضافه شد.` [لینک پک](https://t.me/addstickers/{packshortname})"
                 )
                 return
         await client.send_document("stickers", file_name)
@@ -180,7 +180,7 @@ async def packinfo(client, message):
         await asyncio.sleep(0.5)
         await client.send_message("stickers", "/done")
         await pablo.edit(
-            f"`Sticker Added To Your Pack With Emoji - {emoji}. You Can Find It` [Here](https://t.me/addstickers/{packshortname})"
+            f"`استیکر با اموجی {emoji} به پک شما اضافه شد.` [لینک پک](https://t.me/addstickers/{packshortname})"
         )
     else:
         if is_anim:
@@ -201,7 +201,7 @@ async def packinfo(client, message):
         await asyncio.sleep(0.5)
         await client.send_message("stickers", packshortname)
         await pablo.edit(
-            f"`Sticker Added To Your Pack With Emoji - {emoji}. You Can Find It` [Here](https://t.me/addstickers/{packshortname})"
+            f"`استیکر با اموجی {emoji} به پک شما اضافه شد.` [لینک پک](https://t.me/addstickers/{packshortname})"
         )
         if os.path.exists(file_name):
             os.remove(file_name)

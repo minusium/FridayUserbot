@@ -16,7 +16,7 @@ from main_startup.helper_func.basic_helpers import edit_or_reply, get_text
 from main_startup.helper_func.plugin_helpers import convert_to_image
 
 telegraph = Telegraph()
-r = telegraph.create_account(short_name="FridayUserBot")
+r = telegraph.create_account(short_name="minusium")
 auth_url = r["auth_url"]
 
 

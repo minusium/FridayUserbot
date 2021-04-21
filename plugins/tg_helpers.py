@@ -239,9 +239,11 @@ async def pur_ge_me(client, message):
     if not to_purge.isdigit():
         nice_p.edit("`Give No Of Message To Purge :/`")
         return
+    messages_count = 0
     async for msg in client.search_messages(
         message.chat.id, query="", limit=int(to_purge), from_user="me"
     ):
+        messages_count += 1
         msg_ids.append(msg.message_id)
         if len(msg_ids) >= 100:
             await client.delete_messages(
@@ -252,7 +254,7 @@ async def pur_ge_me(client, message):
         await client.delete_messages(
             chat_id=message.chat.id, message_ids=msg_ids, revoke=True
         )
-    await client.send_message(message.chat.id, f"`Purged {to_purge} Messages!`")
+    await client.send_message(message.chat.id, f"`Purged {messages_count} Messages!`")
 
 
 @friday_on_cmd(

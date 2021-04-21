@@ -791,17 +791,15 @@ async def picgen(client, message):
     if response.status_code == 200:
         with open("FRIDAYOT.jpg", "wb") as f:
             f.write(response.content)
-    captin = f"Fake Image By Friday.\nGet Your Own Friday From @FRIDAYCHAT."
     fole = "FRIDAYOT.jpg"
     if message.reply_to_message:
         await client.send_photo(
             message.chat.id,
             photo=fole,
-            caption=captin,
             reply_to_message_id=message.reply_to_message.message_id,
         )
     else:
-        await client.send_photo(message.chat.id, photo=fole, caption=captin)
+        await client.send_photo(message.chat.id, photo=fole)
     await pablo.delete()
     if os.path.exists(fole):
         os.remove(fole)
@@ -848,12 +846,11 @@ async def slogo(client, message):
         await client.send_photo(
             message.chat.id,
             photo=fname2,
-            caption="Made Using FridayUserBot",
             reply_to_message_id=message.reply_to_message.message_id,
         )
     else:
         await client.send_photo(
-            message.chat.id, photo=fname2, caption="Made Using FridayUserBot"
+            message.chat.id, photo=fname2
         )
     await event.delete()
     if os.path.exists(fname2):
@@ -894,12 +891,11 @@ async def adityalogo(client, message):
         await client.send_photo(
             message.chat.id,
             photo=file_name,
-            caption="Made Using FridayUserBot",
             reply_to_message_id=message.reply_to_message.message_id,
         )
     else:
         await client.send_photo(
-            message.chat.id, photo=file_name, caption="Made Using FridayUserBot"
+            message.chat.id, photo=file_name
         )
     await client.send_chat_action(message.chat.id, "cancel")
     await event.delete()
@@ -919,7 +915,7 @@ async def ujwal_s_ticker(client, message):
     text = get_text(message)
     if not text:
         msg_.edit("`Give Me Text As Input!`")
-        returm
+        return
     sticktext = textwrap.wrap(text, width=10)
     sticktext = "\n".join(sticktext)
     R = random.randint(0, 256)
