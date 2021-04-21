@@ -9,16 +9,19 @@
 import platform
 import re
 import socket
+import sys
 import time
 import uuid
 from datetime import datetime
-import sys
+from os import environ, execle, path, remove
+
 import psutil
 from pyrogram import __version__
-from os import environ, execle, path, remove
-from main_startup import friday_version, start_time, Config
+
+from main_startup import Config, friday_version, start_time
 from main_startup.core.decorators import friday_on_cmd
 from main_startup.helper_func.basic_helpers import (
+    delete_or_pass,
     edit_or_reply,
     get_readable_time,
     humanbytes,
@@ -33,7 +36,7 @@ async def pingy(client, message):
     start = datetime.now()
     hmm = await edit_or_reply(message, "`Pong!`")
     uptime = get_readable_time((time.time() - start_time))
-    myself = await client.get_me()
+    myself = client.me
     if not myself.username:
         mys = myself.id
     else:
@@ -52,20 +55,29 @@ async def pingy(client, message):
 async def amialive(client, message):
     img_ = Config.ALIVE_IMG
     me_ = client.me.first_name
+    du = psutil.disk_usage(client.workdir)
+    disk = f"{humanbytes(du.used)} / {humanbytes(du.total)} " f"({du.percent}%)"
     alive = f"""
 **{me_}'s Friday-UserBot is Alive!**
-➠ **OS :** __{platform.system()}__
-➠ **CPU :** __{len(psutil.Process().cpu_affinity())}__
-➠ **Version :** __{friday_version}__
-➠ **Uptime :** __{get_readable_time((time.time() - start_time))}__
-➠ **PyroGram Version :** __{__version__}__
-➠ **Python Version :** __{platform.python_version()}__
-➠ **(C) @DEVSEXPO 2020-2021**
+
+➔ **Version :** __{friday_version}__
+➔ **Uptime :** __{get_readable_time((time.time() - start_time))}__
+➔ **PyroGram Version :** __{__version__}__
+➔ **Python Version :** __{platform.python_version()}__
+➔ **OS :** __{platform.system()}__
+➔ **CPU :** __{len(psutil.Process().cpu_affinity())}__
+➔ **DISK USAGE :** __{disk}__
 """
     if message.reply_to_message:
-        await client.send_photo(message.chat.id, img_, caption=alive, reply_to_message_id=message.reply_to_message.message_id)
+        await client.send_photo(
+            message.chat.id,
+            img_,
+            caption=alive,
+            reply_to_message_id=message.reply_to_message.message_id,
+        )
     else:
         await client.send_photo(message.chat.id, img_, caption=alive)
+    await delete_or_pass(message)
 
 
 @friday_on_cmd(
@@ -108,6 +120,7 @@ async def give_sysinfo(client, message):
     """
     await edit_or_reply(message, neat_msg)
 
+
 @friday_on_cmd(
     ["restart"],
     cmd_help={"help": "Restart Your Bot!", "example": "{ch}restart"},
@@ -116,4 +129,5 @@ async def wow_restart(client, message):
     await edit_or_reply(message, "`🔁 Restarting... 🔁`")
     args = [sys.executable, "-m", "main_startup"]
     execle(sys.executable, *args, environ)
+    exit()
     return

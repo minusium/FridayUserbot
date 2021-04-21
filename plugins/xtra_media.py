@@ -7,19 +7,20 @@
 # All rights reserved.
 
 import json
+import logging
 import os
+import random
 import shutil
 import urllib
-import logging
 from re import findall
-from main_startup.helper_func.basic_helpers import runcmd
+
 import requests
 from bs4 import BeautifulSoup
 from PIL import Image
 from pyrogram.types import InputMediaPhoto
-import random
+
 from main_startup.core.decorators import friday_on_cmd
-from main_startup.helper_func.basic_helpers import edit_or_reply, get_text
+from main_startup.helper_func.basic_helpers import edit_or_reply, get_text, runcmd
 from main_startup.helper_func.gmdl import googleimagesdownload
 
 opener = urllib.request.build_opener()
@@ -30,16 +31,20 @@ sedpath = "./yandex/"
 if not os.path.isdir(sedpath):
     os.makedirs(sedpath)
 
+
 @friday_on_cmd(
     ["lg"],
     cmd_help={
         "help": "Mess The Animated Sticker!",
-        "example": "{ch}reverse (Reply To Animated Sticker)",
+        "example": "{ch}lg (Reply To Animated Sticker)",
     },
 )
 async def lgo(client, message):
     pablo = await edit_or_reply(message, "`Processing...`")
-    if not message.reply_to_message or not message.reply_to_message.sticker:
+    if not message.reply_to_message:
+        await pablo.edit("Reply to A Animated Sticker...")
+        return
+    if not message.reply_to_message.sticker:
         await pablo.edit("Reply to A Animated Sticker...")
         return
     if message.reply_to_message.sticker.mime_type != "application/x-tgsticker":
@@ -48,16 +53,20 @@ async def lgo(client, message):
     lol = await message.reply_to_message.download("tgs.tgs")
     cmdo = f"lottie_convert.py {lol} json.json"
     await runcmd(cmdo)
+    if not os.path.exists('json.json'):
+        await pablo.edit("`Invalid Tgs Sticker I Suppose.`")
+        os.remove("tgs.tgs")
+        return
     json = open("json.json", "r")
     jsn = json.read()
     json.close()
     jsn = (
-            jsn.replace("[1]", "[2]")
-            .replace("[2]", "[3]")
-            .replace("[3]", "[4]")
-            .replace("[4]", "[5]")
-            .replace("[5]", "[6]")
-        )
+        jsn.replace("[1]", "[2]")
+        .replace("[2]", "[3]")
+        .replace("[3]", "[4]")
+        .replace("[4]", "[5]")
+        .replace("[5]", "[6]")
+    )
     open("json.json", "w").write(jsn)
     await runcmd(f"lottie_convert.py json.json tgs.tgs")
     await client.send_sticker(message.chat.id, "tgs.tgs")
@@ -65,7 +74,6 @@ async def lgo(client, message):
     os.remove(lol)
     os.remove("tgs.tgs")
     await pablo.delete()
-        
 
 
 @friday_on_cmd(
@@ -209,7 +217,7 @@ Get Your Own Friday From @FRIDAYCHAT.</b></u>
         "example": "{ch}img fridayuserbot",
     },
 )
-async def img(client, message):
+async def img_search(client, message):
     pablo = await edit_or_reply(message, "`Processing...`")
     query = get_text(message)
     if not query:
@@ -228,17 +236,18 @@ async def img(client, message):
         "no_directory": "no_directory",
     }
     paths = response.download(arguments)
-    
     lst = paths[0][query]
-    
     Beast = []
     for x in lst:
-        Beast.append(InputMediaPhoto(str(x)))
+        try:
+            Beast.append(InputMediaPhoto(str(x)))
+        except:
+            pass
     await client.send_media_group(message.chat.id, media=Beast)
     shutil.rmtree(os.path.dirname(os.path.abspath(lst[0])))
     await pablo.delete()
 
-    
+
 @friday_on_cmd(
     ["waifuwrite", "wq"],
     cmd_help={
@@ -256,7 +265,15 @@ async def wow_nice(client, message):
     text = f"#{random_s} {te_t}"
     nice = await client.get_inline_bot_results(bot="stickerizerbot", query=text)
     if message.reply_to_message:
-        await client.send_inline_bot_result(message.chat.id, nice.query_id, nice.results[0].id, reply_to_message_id=message.reply_to_message.message_id, hide_via=True)
+        await client.send_inline_bot_result(
+            message.chat.id,
+            nice.query_id,
+            nice.results[0].id,
+            reply_to_message_id=message.reply_to_message.message_id,
+            hide_via=True,
+        )
     else:
-        await client.send_inline_bot_result(message.chat.id, nice.query_id, nice.results[0].id, hide_via=True)
+        await client.send_inline_bot_result(
+            message.chat.id, nice.query_id, nice.results[0].id, hide_via=True
+        )
     await msg_.delete()

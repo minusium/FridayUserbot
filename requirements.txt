@@ -1,7 +1,9 @@
 pyrogram>=1.2.5
+filesplit
 wget>=3.2
 CairoSVG>=2.5.2
 faker>=6.6.2
+html5lib
 langdetect>=1.0.8
 geopy>=2.1.0
 selenium>=3.141.0
@@ -30,8 +32,6 @@ hachoir>=3.1.2
 google-trans-new>=1.1.9
 googletrans>=3.0.0
 beautifulsoup4>=4.9.3
-git+https://github.com/chsaiujwal/maigret
-git+https://github.com/gleitz/howdoi
 tinydb>=4.4.0
 img2pdf>=0.4.0
 gitpython>=3.1.14
@@ -44,3 +44,5 @@ Pillow
 pyshorteners>=1.0.1
 telegraph>=1.4.1
 heroku3>=4.2.3
+aiofiles>=0.6.0
+aiohttp>=3.7.4.post0

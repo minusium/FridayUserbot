@@ -7,7 +7,12 @@
 # All rights reserved.
 
 from main_startup.core.decorators import friday_on_cmd
-from main_startup.helper_func.basic_helpers import edit_or_reply, get_text, edit_or_send_as_file, get_user
+from main_startup.helper_func.basic_helpers import (
+    edit_or_reply,
+    edit_or_send_as_file,
+    get_text,
+    get_user,
+)
 
 
 @friday_on_cmd(
@@ -105,6 +110,40 @@ async def bleck_name(client, message):
         return
     await owo.edit(f"`Lastname Sucessfully Changed To {new_lastname} !`")
 
+@friday_on_cmd(
+    ["join"],
+    cmd_help={
+        "help": "Join A Chat Easily.",
+        "example": "{ch}join (chat link or username)",
+    },
+)
+async def join_(client, message):
+    owo = await edit_or_reply(message, "`Joining Chat...`")
+    input_ = get_text(message)
+    if not input_:
+        await owo.edit("`Give A Input :/`")
+        return
+    try:
+        await client.join_chat(input_)
+    except BaseException as e:
+        await owo.edit(
+            f"`[Failed] - To Join Chat` \n**TraceBack :** `{e}`"
+        )
+        return
+    await owo.edit(f"`Sucessfully, Joined This Chat.`")
+
+@friday_on_cmd(
+    ["leave"],
+    group_only=True,
+    cmd_help={
+        "help": "Leave Chat Easily.",
+        "example": "{ch}leave",
+    },
+)
+async def leave_(client, message):
+    await edit_or_reply(message, "`GOODBYECRUELGROUP - *leaves*`")
+    await client.leave_chat(message.chat.id)
+
 
 @friday_on_cmd(
     ["updateppic", "ppic"],
@@ -158,34 +197,37 @@ async def create_poll(client, message):
         await msg.edit("`Give Me Options :/`")
         return
     poll_q, poll_options = poll_.split("|")
-    if not ',' in poll_options:
+    if not "," in poll_options:
         await msg.edit("`A Poll Needs 1+ Options!`")
         return
     option_s = poll_options.split(",")
     await client.send_poll(message.chat.id, question=poll_q, options=option_s)
     await msg.delete()
 
+
 @friday_on_cmd(
     ["dump"],
     cmd_help={
         "help": "Get Pyrogram Message Dumbs!",
         "example": "{ch}dump",
-    }
+    },
 )
 async def dumb_er(client, message):
+    ow = await edit_or_reply(message, "`Dumping...`")
     if message.reply_to_message:
         m_sg = message.reply_to_message
     else:
         m_sg = message
     owo = f"{m_sg}"
-    await edit_or_send_as_file(owo, message, client, "Json-Dump", "Dump", "md")
-    
+    await edit_or_send_as_file(owo, ow, client, "Json-Dump", "Dump", "md")
+
+
 @friday_on_cmd(
     ["purgeme"],
     cmd_help={
         "help": "Purge Your Own Message Until Given Limit!",
         "example": "{ch}purgeme 10",
-    }
+    },
 )
 async def pur_ge_me(client, message):
     nice_p = await edit_or_reply(message, "`Processing...`")
@@ -212,12 +254,13 @@ async def pur_ge_me(client, message):
         )
     await client.send_message(message.chat.id, f"`Purged {to_purge} Messages!`")
 
+
 @friday_on_cmd(
     ["invite", "add"],
     cmd_help={
         "help": "Add Users To Channel / Groups!",
         "example": "{ch}invite @Midhun_xD @chsaiujwal @meisnub",
-    }
+    },
 )
 async def add_user_s_to_group(client, message):
     mg = await edit_or_reply(message, "`Adding Users!`")
@@ -232,13 +275,14 @@ async def add_user_s_to_group(client, message):
         await mg.edit(f"`Unable To Add Users! \nTraceBack : {e}`")
         return
     await mg.edit(f"`Sucessfully Added {len(user_list)} To This Group / Channel!`")
-    
+
+
 @friday_on_cmd(
     ["a2c"],
     cmd_help={
         "help": "Add Users To Your Contacts!",
         "example": "{ch}a2c @Meisnub",
-    }
+    },
 )
 async def add_user_s_to_contact(client, message):
     msg_ = await edit_or_reply(message, "`Please Wait!`")

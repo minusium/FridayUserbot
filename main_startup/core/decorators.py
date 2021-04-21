@@ -7,12 +7,19 @@
 # All rights reserved.
 
 import inspect
+import logging
 import os
 from datetime import datetime
 from traceback import format_exc
-import logging
+
 import pytz
-from pyrogram import StopPropagation, filters, ContinuePropagation
+from pyrogram import ContinuePropagation, StopPropagation, filters
+from pyrogram.errors.exceptions.bad_request_400 import (
+    MessageIdInvalid,
+    MessageNotModified,
+    MessageEmpty,
+    UserNotParticipant
+)
 from pyrogram.handlers import MessageHandler
 
 from main_startup import (
@@ -38,18 +45,31 @@ def friday_on_cmd(
     chnnl_only: bool = False,
     only_if_admin: bool = False,
     ignore_errors: bool = False,
+    propagate_to_next_handler: bool = True,
     file_name: str = None,
     is_official: bool = True,
     cmd_help: dict = {"help": "No One One Gonna Help You", "example": "{ch}what"},
 ):
     """- Main Decorator To Register Commands. -"""
-    filterm = (filters.me | filters.user(Config.AFS)) & filters.command(cmd, Config.COMMAND_HANDLER) & ~filters.via_bot & ~filters.forwarded
-    add_help_menu(cmd=cmd[0], stack=inspect.stack(), is_official=is_official, cmd_help=cmd_help['help'], example=cmd_help['example'])
+    filterm = (
+        (filters.me | filters.user(Config.AFS))
+        & filters.command(cmd, Config.COMMAND_HANDLER)
+        & ~filters.via_bot
+        & ~filters.forwarded
+    )
+    add_help_menu(
+        cmd=cmd[0],
+        stack=inspect.stack(),
+        is_official=is_official,
+        cmd_help=cmd_help["help"],
+        example=cmd_help["example"],
+    )
+
     def decorator(func):
         async def wrapper(client, message):
             chat_type = message.chat.type
             if only_if_admin and not await is_admin_or_owner(
-                message, (await client.get_me()).id
+                message, (client.me).id
             ):
                 await edit_or_reply(
                     message, "`This Command Only Works, If You Are Admin Of The Chat!`"
@@ -73,10 +93,20 @@ def friday_on_cmd(
                     raise StopPropagation
                 except KeyboardInterrupt:
                     pass
+                except MessageNotModified:
+                    pass
+                except MessageIdInvalid:
+                    logging.warning(
+                        "Please Don't Delete Commands While it's Processing.."
+                    )
+                except UserNotParticipant:
+                    pass
                 except ContinuePropagation:
                     raise ContinuePropagation
                 except BaseException as e:
-                    logging.error(f"Exception - {func.__module__} - {func.__name__} : {e}")
+                    logging.error(
+                        f"Exception - {func.__module__} - {func.__name__}"
+                    )
                     TZ = pytz.timezone(Config.TZ)
                     datetime_tz = datetime.now(TZ)
                     text = "**!ERROR - REPORT!**\n\n"
@@ -89,15 +119,9 @@ def friday_on_cmd(
                     text += "\n\n__You can Forward This to @FridayChat, If You Think This is Serious A Error!__"
                     try:
                         await client.send_message(Config.LOG_GRP, text)
-                    except Exception:
-                        pass
-        Friday.add_handler(MessageHandler(wrapper, filters=filterm), group)
-        if Friday2:
-            Friday2.add_handler(MessageHandler(wrapper, filters=filterm), group)
-        if Friday3:
-            Friday3.add_handler(MessageHandler(wrapper, filters=filterm), group)
-        if Friday4:
-            Friday4.add_handler(MessageHandler(wrapper, filters=filterm), group)
+                    except BaseException:
+                        logging.error(text)
+        add_handler(filterm, wrapper, cmd)
         return wrapper
 
     return decorator
@@ -113,8 +137,12 @@ def listen(filter_s):
                 raise StopPropagation
             except ContinuePropagation:
                 raise ContinuePropagation
+            except UserNotParticipant:
+                pass
+            except MessageEmpty:
+                pass
             except BaseException as e:
-                logging.error(f"Exception - {func.__module__} - {func.__name__} : {e}")
+                logging.error(f"Exception - {func.__module__} - {func.__name__}")
                 TZ = pytz.timezone(Config.TZ)
                 datetime_tz = datetime.now(TZ)
                 text = "**!ERROR WHILE HANDLING UPDATES!**\n\n"
@@ -122,13 +150,14 @@ def listen(filter_s):
                 text += f"\n**Plugin-Name :** `{func.__module__}`"
                 text += f"\n**Function Name :** `{func.__name__}` \n"
                 text += datetime_tz.strftime(
-                        "**Date :** `%Y-%m-%d` \n**Time :** `%H:%M:%S`"
-                    )
+                    "**Date :** `%Y-%m-%d` \n**Time :** `%H:%M:%S`"
+                )
                 text += "\n\n__You can Forward This to @FridayChat, If You Think This is A Error!__"
                 try:
                     await client.send_message(Config.LOG_GRP, text)
-                except Exception:
-                    pass
+                except BaseException:
+                    logging.error(text)
+            message.continue_propagation()
         Friday.add_handler(MessageHandler(wrapper, filters=filter_s), group=0)
         if Friday2:
             Friday2.add_handler(MessageHandler(wrapper, filters=filter_s), group=0)
@@ -137,19 +166,25 @@ def listen(filter_s):
         if Friday4:
             Friday4.add_handler(MessageHandler(wrapper, filters=filter_s), group=0)
         return wrapper
+
     return decorator
 
 
-def add_help_menu(cmd, stack, is_official=True, cmd_help="No One Gonna Help You", example="{ch}what", file_name=None):
+def add_help_menu(
+    cmd,
+    stack,
+    is_official=True,
+    cmd_help="No One Gonna Help You",
+    example="{ch}what",
+    file_name=None,
+):
     if not file_name:
         previous_stack_frame = stack[1]
         if "xtraplugins" in previous_stack_frame.filename:
             is_official = False
-        file_name = os.path.basename(
-            previous_stack_frame.filename.replace(".py", "").replace("_", " ")
-        ).title()
+        file_name = os.path.basename(previous_stack_frame.filename.replace(".py", ""))
     cmd_helpz = example.format(ch=Config.COMMAND_HANDLER)
-    cmd_helper = f"**Module Name :** `{file_name}` \n\n**Command :** `{Config.COMMAND_HANDLER}{cmd}` \n**Help :** `{cmd_help}` \n**Example :** `{cmd_helpz}`"
+    cmd_helper = f"**Module Name :** `{file_name.replace('_', ' ').title()}` \n\n**Command :** `{Config.COMMAND_HANDLER}{cmd}` \n**Help :** `{cmd_help}` \n**Example :** `{cmd_helpz}`"
     if is_official:
         if file_name not in CMD_LIST.keys():
             CMD_LIST[file_name] = cmd_helper
@@ -164,3 +199,19 @@ def add_help_menu(cmd, stack, is_official=True, cmd_help="No One Gonna Help You"
             XTRA_CMD_LIST[
                 file_name
             ] += f"\n\n**Command :** `{Config.COMMAND_HANDLER}{cmd}` \n**Help :** `{cmd_help}` \n**Example :** `{cmd_helpz}`"
+
+
+def add_handler(filter_s, func_, cmd):
+    d_c_l = Config.DISABLED_SUDO_CMD_S
+    if d_c_l:
+        if "dev" in d_c_l:
+            d_c_l = ['eval', 'bash', 'install'] 
+        if any(item in list(d_c_l) for item in list(cmd)): 
+            filter_s = (filters.me & filters.command(cmd, Config.COMMAND_HANDLER) & ~filters.via_bot & ~filters.forwarded)
+    Friday.add_handler(MessageHandler(func_, filters=filter_s), group=0)
+    if Friday2:
+        Friday2.add_handler(MessageHandler(func_, filters=filter_s), group=0)
+    if Friday3:
+        Friday3.add_handler(MessageHandler(func_, filters=filter_s), group=0)
+    if Friday4:
+        Friday4.add_handler(MessageHandler(func_, filters=filter_s), group=0)    

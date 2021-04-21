@@ -21,8 +21,8 @@ from main_startup.helper_func.basic_helpers import (
     iter_chats,
 )
 from main_startup.helper_func.logger_s import LogIt
-
 from plugins import devs_id
+
 
 @friday_on_cmd(
     ["gmute"],
@@ -45,7 +45,7 @@ async def gmute_him(client, message):
         return
     if not reason:
         reason = "Just_Gmutted!"
-    if userz.id == (await client.get_me()).id:
+    if userz.id == (client.me).id:
         await g.edit("`Oh, This is So Funny Btw :/`")
         return
     if userz.id in devs_id:
@@ -83,7 +83,7 @@ async def gmute_him(client, message):
     except:
         await ug.edit(f"`404 : User Doesn't Exists In This Chat !`")
         return
-    if userz.id == (await client.get_me()).id:
+    if userz.id == (client.me).id:
         await ug.edit("`Oh, This is So Funny Btw :/`")
         return
     if userz.id in Config.AFS:
@@ -121,7 +121,7 @@ async def gbun_him(client, message):
         return
     if not reason:
         reason = "Private Reason!"
-    if userz.id == (await client.get_me()).id:
+    if userz.id == (client.me).id:
         await gbun.edit("`Oh, This is So Funny Btw :/`")
         return
     if userz.id in devs_id:
@@ -172,7 +172,7 @@ async def ungbun_him(client, message):
     except:
         await ungbun.edit(f"`404 : User Doesn't Exists!`")
         return
-    if userz.id == (await client.get_me()).id:
+    if userz.id == (client.me).id:
         await ungbun.edit("`Oh, This is So Funny Btw :/`")
         return
     if not await gban_info(userz.id):
@@ -200,28 +200,33 @@ async def ungbun_him(client, message):
 @listen(filters.incoming & ~filters.me & ~filters.user(Config.AFS))
 async def delete_user_msgs(client, message):
     if not message:
-        message.continue_propagation()
+        
+        return
     if not message.from_user:
-        message.continue_propagation()
+        
+        return
     user = message.from_user.id
     if await is_gmuted(user):
         try:
             await message.delete()
         except:
-            message.continue_propagation()
+            
+            return
     if await gban_info(user):
         me_ = await message.chat.get_member(int(client.me.id))
         if not me_.can_restrict_members:
-            message.continue_propagation()
+            
+            return
         try:
             await client.kick_chat_member(message.chat.id, int(user))
         except:
-            message.continue_propagation()
+            
+            return
         await client.send_message(
             message.chat.id,
             f"**#GbanWatch** \n**Chat ID :** `{message.chat.id}` \n**User :** `{user}` \n**Reason :** `{await gban_info(user)}`",
         )
-    message.continue_propagation()
+    
 
 
 @friday_on_cmd(
@@ -240,7 +245,8 @@ async def give_glist(client, message):
         return
     for lit in list_:
         oof += f"**User :** `{lit['user']}` \n**Reason :** `{lit['reason']}` \n\n"
-    await edit_or_send_as_file(oof, message, client, "GbanList", "Gban-List")
+    await edit_or_send_as_file(oof, glist, client, "GbanList", "Gban-List")
+
 
 @friday_on_cmd(
     ["gbroadcast"],
@@ -263,7 +269,9 @@ async def gbroadcast(client, message):
         return
     for c in chat_dict:
         try:
-            msg = message.reply_to_message.copy(c)
+            msg = await message.reply_to_message.copy(c)
         except:
             failed += 1
-    await msg_.edit(f"`Message Sucessfully Send To {chat_len-failed} Chats! Failed In {failed} Chats.`")
+    await msg_.edit(
+        f"`Message Sucessfully Send To {chat_len-failed} Chats! Failed In {failed} Chats.`"
+    )

@@ -7,22 +7,23 @@
 # All rights reserved.
 
 import asyncio
+import os
 
 from pyrogram import filters
+from telegraph import Telegraph, exceptions, upload_file
 
 from database.bot_settings_db import (
     add_pm_text,
+    add_pm_thumb,
     get_pm_spam_limit,
     get_pm_text,
     get_thumb,
-    add_pm_thumb,
     set_pm_spam_limit,
 )
-from telegraph import Telegraph, exceptions, upload_file
-import os
 from database.pmdb import approve_user, disapprove_user, is_user_approved
 from main_startup.core.decorators import friday_on_cmd, listen
-from main_startup.helper_func.basic_helpers import get_text, edit_or_reply
+from main_startup import Config
+from main_startup.helper_func.basic_helpers import edit_or_reply, get_text
 from main_startup.helper_func.logger_s import LogIt
 from main_startup.helper_func.plugin_helpers import convert_to_image
 
@@ -36,7 +37,10 @@ try:
     r = telegraph.create_account(short_name="FridayUserBot.")
     auth_url = r["auth_url"]
 except:
-    pass
+    telegraph = None
+    r = None
+    auth_url = None
+
 
 @friday_on_cmd(
     ["setpmtext"],
@@ -46,8 +50,14 @@ except:
     },
 )
 async def set_custom_pm_texts(client, message):
+    if not Config.PM_PSW:
+        await ms_.edit("`Pm Permit Is Disabled. Whats The Use Of Adding Custom Pm Text?`")
+        return
     ptext = get_text(message)
     if not ptext:
+        if not message.reply_to_message:
+            await message.edit("`Reply To Text Message Or Give To Text As Input To SetAs Custom PM Text`")
+            return
         if message.reply_to_message.text:
             ptext = message.reply_to_message.text
     if not ptext:
@@ -70,6 +80,9 @@ async def set_custom_pm_texts(client, message):
     },
 )
 async def set_custom_pm_texts(client, message):
+    if not Config.PM_PSW:
+        await ms_.edit("`Pm Permit Is Disabled. Whats The Use Of Setting Pm Limit?`")
+        return
     ptext = get_text(message)
     if not ptext:
         await message.edit("`Give Number Input!`")
@@ -96,14 +109,14 @@ async def set_custom_pm_texts(client, message):
 )
 async def blockz(client, message):
     if message.chat.type == "private":
-        user_ = await client.get_users(message.chat.id)
+        user_ = await client.get_users(int(message.chat.id))
         firstname = user_.first_name
-        if await is_user_approved(message.chat.id):
-            await disapprove_user(message.chat.id)
+        if await is_user_approved(int(message.chat.id)):
+            await disapprove_user(int(message.chat.id))
         await message.edit(
-            "Blocked [{}](tg://user?id={})".format(firstname, message.chat.id)
+            "Blocked [{}](tg://user?id={})".format(firstname, int(message.chat.id))
         )
-        await client.block_user(message.chat.id)
+        await client.block_user(int(message.chat.id))
         await asyncio.sleep(3)
         await message.delete()
     elif message.chat.type == "supergroup":
@@ -159,20 +172,25 @@ async def unmblock(client, message):
     },
 )
 async def allow(client, message):
+    if not Config.PM_PSW:
+        await ms_.edit("`Pm Permit Is Disabled. Whats The Use Of Approving User?`")
+        return
     if message.chat.type == "private":
-        if message.chat.id in OLD_MSG:
-            await OLD_MSG[message.chat.id].delete()
-        user_ = await client.get_users(message.chat.id)
+        if int(message.chat.id) in OLD_MSG:
+            await OLD_MSG[int(message.chat.id)].delete()
+        user_ = await client.get_users(int(message.chat.id))
         firstname = user_.first_name
-        if not await is_user_approved(message.chat.id):
-            await approve_user(message.chat.id)
+        if not await is_user_approved(int(message.chat.id)):
+            await approve_user(int(message.chat.id))
         else:
             await message.edit("`User is Already Approved!`")
             await asyncio.sleep(3)
             await message.delete()
             return
         await message.edit(
-            "Approved to pm [{}](tg://user?id={})".format(firstname, message.chat.id)
+            "Approved to pm [{}](tg://user?id={})".format(
+                firstname, int(message.chat.id)
+            )
         )
         await asyncio.sleep(3)
         await message.delete()
@@ -206,11 +224,14 @@ async def allow(client, message):
     },
 )
 async def disallow(client, message):
+    if not Config.PM_PSW:
+        await ms_.edit("`Pm Permit Is Disabled. Whats The Use Of Dis-Approving Users?`")
+        return
     if message.chat.type == "private":
-        user_ = await client.get_users(message.chat.id)
+        user_ = await client.get_users(int(message.chat.id))
         firstname = user_.first_name
-        if await is_user_approved(message.chat.id):
-            await disapprove_user(message.chat.id)
+        if await is_user_approved(int(message.chat.id)):
+            await disapprove_user(int(message.chat.id))
         else:
             await message.edit(
                 "`This User Was Never Approved. How Should I Disapprove?`"
@@ -219,7 +240,9 @@ async def disallow(client, message):
             await message.delete()
             return
         await message.edit(
-            "DisApproved to pm [{}](tg://user?id={})".format(firstname, message.chat.id)
+            "DisApproved to pm [{}](tg://user?id={})".format(
+                firstname, int(message.chat.id)
+            )
         )
         await asyncio.sleep(3)
         await message.delete()
@@ -245,15 +268,24 @@ async def disallow(client, message):
         )
         await asyncio.sleep(3)
         await message.delete()
-        
-@friday_on_cmd(['setpmpic', 'spp'],
-   cmd_help={
+
+
+@friday_on_cmd(
+    ["setpmpic", "spp"],
+    cmd_help={
         "help": "Set Replied Image As Your Pm Permit Image.",
         "example": "{ch}setpmpic (reply to image)",
-    })
+    },
+)
 async def set_my_pic(client, message):
     ms_ = await edit_or_reply(message, "`Please Wait!`")
-    if not (message.reply_to_message or message.reply_to_message.photo or message.reply_to_message.sticker):
+    if not Config.PM_PSW:
+        await ms_.edit("`Pm Permit Is Disabled. Whats The Use Of Adding A Pm Pic?`")
+        return
+    if not message.reply_to_message:
+        await ms_.edit("`Reply To Image To Set As Your Pm Permit Pic.`")
+        return
+    if not (message.reply_to_message.photo or message.reply_to_message.sticker):
         await ms_.edit("`Reply To Image To Set As Your Pm Permit Pic.`")
         return
     if message.reply_to_message.sticker:
@@ -263,60 +295,71 @@ async def set_my_pic(client, message):
     try:
         media_url = upload_file(m_d)
     except exceptions.TelegraphException as exc:
-        await ms_.edit(
-                f"`Unable To Upload Media To Telegraph! \nTraceBack : {exc}`"
-            )
+        await ms_.edit(f"`Unable To Upload Media To Telegraph! \nTraceBack : {exc}`")
         os.remove(m_d)
         return
     media_url = f"https://telegra.ph/{media_url[0]}"
     await add_pm_thumb(media_url)
     await ms_.edit("`Sucessfully Set This Image As Pm Permit Image!`")
     os.remove(m_d)
-        
+
 
 @listen(filters.incoming & filters.private & ~filters.edited & ~filters.me)
 async def pmPermit(client, message):
+    if not Config.PM_PSW:
+        
+        return
     if not message.from_user:
-        message.continue_propagation()
-    if await is_user_approved(message.chat.id):
-        message.continue_propagation()
+        
+        return
+    if await is_user_approved(int(message.chat.id)):
+        
+        return
     if message.from_user.id in devs_id:
-        await approve_user(message.chat.id)
-        message.continue_propagation()
-    user_ = await client.get_users(message.chat.id)
+        await approve_user(int(message.chat.id))
+        
+        return
+    user_ = await client.get_users(int(message.chat.id))
     if user_.is_contact:
-        message.continue_propagation()
+        
+        return
     if user_.is_bot:
-        message.continue_propagation()
+        
+        return
     if user_.is_verified:
-        message.continue_propagation()
-    if user_.id == (await client.get_me()).id:
-        message.continue_propagation()
+        
+        return
+    if user_.id == (client.me).id:
+        
+        return
     if user_.is_scam:
         await message.reply_text("`Scammer Aren't Welcome To My Masters PM!`")
         await client.block_user(user_.id)
-        message.continue_propagation()
+        
+        return
     if user_.is_support:
-        message.continue_propagation()
+        
+        return
     text = await get_pm_text()
     log = LogIt(message)
     capt = await get_thumb()
     pm_s_ = await get_pm_spam_limit()
-    if message.chat.id not in PM_WARNS:
-        PM_WARNS[message.chat.id] = 0
-    elif PM_WARNS[message.chat.id] >= int(pm_s_):
+    if int(message.chat.id) not in PM_WARNS:
+        PM_WARNS[int(message.chat.id)] = 0
+    elif PM_WARNS[int(message.chat.id)] >= int(pm_s_):
         await message.reply_text(
             f"`Thats It! I Gave You {int(pm_s_)} Warning. Now Fuck Off. Blocked And Reported!`"
         )
         await client.block_user(user_.id)
-        if message.chat.id in OLD_MSG:
-            OLD_MSG.pop(message.chat.id)
-        if message.chat.id in PM_WARNS:
-            PM_WARNS.pop(message.chat.id)
+        if int(message.chat.id) in OLD_MSG:
+            OLD_MSG.pop(int(message.chat.id))
+        if int(message.chat.id) in PM_WARNS:
+            PM_WARNS.pop(int(message.chat.id))
         blockeda = f"**#Blocked_PMPERMIT** \n**User :** `{user_.id}` \n**Reason :** `Spam Limit Reached.`"
         await log.log_msg(client, blockeda)
-        message.continue_propagation()
-    warnings_got = f"{int(PM_WARNS[message.chat.id]) + 1}/{int(pm_s_)}"
+        
+        return
+    warnings_got = f"{int(PM_WARNS[int(message.chat.id)]) + 1}/{int(pm_s_)}"
     user_firstname = message.from_user.first_name
     me_f = client.me.first_name
     holy = await message.reply_photo(
@@ -325,8 +368,8 @@ async def pmPermit(client, message):
             user_firstname=user_firstname, warns=warnings_got, boss_firstname=me_f
         ),
     )
-    PM_WARNS[message.chat.id] += 1
-    if message.chat.id in OLD_MSG:
-        await OLD_MSG[message.chat.id].delete()
-    OLD_MSG[message.chat.id] = holy
-    message.continue_propagation()
+    PM_WARNS[int(message.chat.id)] += 1
+    if int(message.chat.id) in OLD_MSG:
+        await OLD_MSG[int(message.chat.id)].delete()
+    OLD_MSG[int(message.chat.id)] = holy
+    

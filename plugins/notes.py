@@ -32,7 +32,7 @@ async def notes(client, message):
         return
     note_name = note_name.lower()
     msg = message.reply_to_message
-    copied_msg = await msg.copy(Config.LOG_GRP)
+    copied_msg = await msg.copy(int(Config.LOG_GRP))
     await add_note(note_name, message.chat.id, copied_msg.message_id)
     await note_.edit(f"`Done! {note_name} Added To Notes List!`")
 
@@ -42,19 +42,19 @@ async def lmao(client, message):
     if await all_note(message.chat.id):
         pass
     else:
-        message.continue_propagation()
+        return
     owo = message.matches[0].group(1)
     if owo is None:
-        message.continue_propagation()
+        return
     if await note_info(owo, message.chat.id):
         sed = await note_info(owo, message.chat.id)
         await client.copy_message(
-            from_chat_id=Config.LOG_GRP,
+            from_chat_id=int(Config.LOG_GRP),
             chat_id=message.chat.id,
             message_id=sed["msg_id"],
             reply_to_message_id=message.message_id,
         )
-    message.continue_propagation()
+    
 
 
 @friday_on_cmd(

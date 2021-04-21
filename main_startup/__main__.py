@@ -9,9 +9,19 @@
 import logging
 import os
 import platform
+
 import pyrogram
 from pyrogram import __version__
-from main_startup import Friday, Friday2, Friday3, Friday4, bot, friday_version
+
+from main_startup import (
+    Friday,
+    Friday2,
+    Friday3,
+    Friday4,
+    bot,
+    friday_version,
+    mongo_client,
+)
 from main_startup.core.startup_helpers import (
     load_plugin,
     load_xtra_mod,
@@ -22,7 +32,18 @@ from main_startup.core.startup_helpers import (
 from .config_var import Config
 
 
+async def mongo_check():
+    """Check Mongo Client"""
+    try:
+        await mongo_client.server_info()
+    except BaseException as e:
+        logging.error("Something Isn't Right With Mongo! Please Check Your URL")
+        logging.error(str(e))
+        quit(1)
+
+
 async def load_unofficial_modules():
+    """Load Extra Plugins."""
     logging.info("Loading X-Tra Plugins!")
     await run_cmd("bash bot_utils_files/other_helpers/xtra_plugins.sh")
     xtra_mods = plugin_collecter("./xtraplugins/")
@@ -30,10 +51,13 @@ async def load_unofficial_modules():
         try:
             load_xtra_mod(mods)
         except Exception as e:
-            logging.error("[USER][XTRA-PLUGINS] - Failed To Load : " + f"{mods} - {str(e)}")
+            logging.error(
+                "[USER][XTRA-PLUGINS] - Failed To Load : " + f"{mods} - {str(e)}"
+            )
 
 
 async def fetch_plugins_from_channel():
+    """Fetch Plugins From Channel"""
     try:
         async for message in Friday.search_messages(
             Config.PLUGIN_CHANNEL, filter="document", query=".py"
@@ -50,6 +74,8 @@ async def fetch_plugins_from_channel():
 
 
 async def run_bot():
+    """Run The Bot"""
+    await mongo_check()
     if bot:
         await bot.start()
         bot.me = await bot.get_me()
@@ -61,15 +87,19 @@ async def run_bot():
                 logging.error("[ASSISTANT] - Failed To Load : " + f"{mods} - {str(e)}")
     await Friday.start()
     Friday.me = await Friday.get_me()
+    Friday.has_a_bot = True if bot else False
     if Friday2:
         await Friday2.start()
         Friday2.me = await Friday2.get_me()
+        Friday2.has_a_bot = True if bot else False
     if Friday3:
         await Friday3.start()
         Friday3.me = await Friday3.get_me()
+        Friday3.has_a_bot = True if bot else False
     if Friday4:
         await Friday4.start()
         Friday4.me = await Friday4.get_me()
+        Friday4.has_a_bot = True if bot else False
     if Config.PLUGIN_CHANNEL:
         await fetch_plugins_from_channel()
     needed_mods = plugin_collecter("./plugins/")

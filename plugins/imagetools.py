@@ -6,32 +6,33 @@
 #
 # All rights reserved.
 
+import html
 import os
 import random
+import textwrap
 from datetime import datetime
 from shutil import rmtree
-from NoteShrinker import NoteShrinker
+
 import cv2
 import numpy as np
-import requests
-from telegraph import Telegraph, exceptions, upload_file
-import html
-import wget
 import pytz
 import requests
+import wget
 from glitch_this import ImageGlitcher
+from NoteShrinker import NoteShrinker
 from PIL import Image, ImageDraw, ImageFont
 from pygifsicle import optimize
-import random
-import textwrap
+from telegraph import Telegraph, exceptions, upload_file
+
 from main_startup.config_var import Config
 from main_startup.core.decorators import friday_on_cmd
 from main_startup.core.startup_helpers import run_cmd
 from main_startup.helper_func.basic_helpers import edit_or_reply, get_text
 from main_startup.helper_func.plugin_helpers import (
     convert_to_image,
+    convert_image_to_image_note,
     convert_vid_to_vidnote,
-    generate_meme,
+    generate_meme
 )
 
 glitcher = ImageGlitcher()
@@ -41,45 +42,6 @@ LOOP = 0
 telegraph = Telegraph()
 r = telegraph.create_account(short_name="FridayUserBot")
 auth_url = r["auth_url"]
-
-
-
-@friday_on_cmd(
-    ["ytc"],
-    cmd_help={
-        "help": "Create Youtube Comment!",
-        "example": "{ch}ytc (reply to Someone) (text comment)",
-    },
-)
-async def ytc(client, message):
-    pablo = await edit_or_reply(message, "`Processing...`")
-    comment = get_text(message)
-    if not comment:
-        await pablo.edit("`Provide Some Text For Comment!`")
-        return
-    if not message.reply_to_message:
-        await pablo.edit("`Reply To Someone!`")
-        return
-    try:
-        lol = await client.get_profile_photos(message.reply_to_message.from_user.id, limit=1)
-        H = await client.download_media(lol[0].file_id)
-        media_url = upload_file(H)
-        link = "https://telegra.ph/{media_url[0]}"
-        os.remove(H)
-    except Exception as e:
-        print(e)
-        link = "https://telegra.ph/file/b9684cda357dfbe6f5748.jpg"
-    first_name = html.escape(message.reply_to_message.from_user.first_name)
-    if first_name is not None:
-        first_name = first_name.replace("\u2060", "")
-    imglink = link
-    lolul = f"https://some-random-api.ml/canvas/youtube-comment?avatar={imglink}&username={first_name}&comment={comment}"
-    r = requests.get(lolul)
-    open("ytc.png", "wb").write(r.content)
-    lolbruh = "ytc.png"
-    await pablo.delete()
-    await client.send_photo(message.chat.id, lolbruh, caption="`Hmm Nice.`")
-    os.remove(lolbruh)
 
 
 @friday_on_cmd(
@@ -216,6 +178,39 @@ async def flips(client, message):
     flipped = cv2.flip(image, 0)
     ok = "Flipped.webp"
     cv2.imwrite(ok, flipped)
+    if message.reply_to_message:
+        await client.send_sticker(
+            message.chat.id,
+            sticker=ok,
+            reply_to_message_id=message.reply_to_message.message_id,
+        )
+    else:
+        await client.send_sticker(message.chat.id, sticker=ok)
+    await owo.delete()
+    for files in (ok, img):
+        if files and os.path.exists(files):
+            os.remove(files)
+
+@friday_on_cmd(
+    ["imgnote"],
+    cmd_help={
+        "help": "Crop Image Into Round & Cool Sticker",
+        "example": "{ch}imgnote (reply to Image or sticker)",
+    },
+)
+async def c_imagenote(client, message):
+    owo = await edit_or_reply(message, "`OwO, Cropping.`")
+    img = await convert_to_image(message, client)
+    if not img:
+        await owo.edit("`Reply to a valid media first...`")
+        return
+    if not os.path.exists(img):
+        await owo.edit("`Invalid Media!`")
+        return
+    ok = await convert_image_to_image_note(img)
+    if not os.path.exists(ok):
+        await owo.edit("`Unable To Convert To Round Image.`")
+        return
     if message.reply_to_message:
         await client.send_sticker(
             message.chat.id,
@@ -609,7 +604,8 @@ async def spin(client, message):
     await pablo.edit("🌀 `Tighten your seatbelts, sh*t is about to get wild ...`")
     spin_dir = 1
     path = "./rotate-disc/"
-    os.mkdir(path)
+    if not os.path.exists(path):
+        os.mkdir(path)
     im = Image.open(pic_loc)
     if im.mode != "RGB":
         im = im.convert("RGB")
@@ -646,14 +642,18 @@ async def ph(client, message):
     pablo = await edit_or_reply(message, "`Processing.....`")
     Hell = get_text(message)
     if not Hell:
-        await pablo.edit("Invalid Command Syntax, Please Check Help Menu To Know More!")
+        await pablo.edit(
+            "`Please Give Me A Valid Input. You Can Check Help Menu To Know More!`"
+        )
         return
     Escobar = Hell.split(":")
     username = Escobar[0]
     try:
         texto = Escobar[1]
     except:
-        await pablo.edit("Invalid Command Syntax, Please Check Help Menu To Know More!")
+        await pablo.edit(
+            "`Please Give Me A Valid Input. You Can Check Help Menu To Know More!`"
+        )
         return
     img = Image.open("./bot_utils_files/image_templates/ph_comment_templete.jpg")
     d1 = ImageDraw.Draw(img)
@@ -687,14 +687,18 @@ async def fgs(client, message):
     pablo = await edit_or_reply(message, "`Processing.....`")
     Hell = get_text(message)
     if not Hell:
-        await pablo.edit("Invalid Command Syntax, Please Check Help Menu To Know More!")
+        await pablo.edit(
+            "`Please Give Me A Valid Input. You Can Check Help Menu To Know More!`"
+        )
         return
     Escobar = Hell.split(":")
     search = Escobar[0]
     try:
         result = Escobar[1]
     except:
-        await pablo.edit("Invalid Command Syntax, Please Check Help Menu To Know More!")
+        await pablo.edit(
+            "`Please Give Me A Valid Input. You Can Check Help Menu To Know More!`"
+        )
         return
     photo = Image.open("./bot_utils_files/image_templates/google_search_templete.jpg")
     drawing = ImageDraw.Draw(photo)
@@ -730,7 +734,9 @@ async def jail(client, message):
     pablo = await edit_or_reply(message, "`Processing.....`")
     Hell = get_text(message)
     if not Hell and not message.reply_to_message:
-        await pablo.edit("Invalid Command Syntax, Please Check Help Menu To Know More!")
+        await pablo.edit(
+            "`Please Give Me A Valid Input. You Can Check Help Menu To Know More!`"
+        )
         return
     if message.reply_to_message:
         img = await convert_to_image(message, client)
@@ -745,10 +751,10 @@ async def jail(client, message):
                 return
     if Hell and not message.reply_to_message:
         lol = await client.get_profile_photos(Hell, limit=1)
-        
+
         try:
             img = await client.download_media(lol[0].file_id)
-            
+
         except IndexError:
             await pablo.edit("User Has No Profile Picture")
             return
@@ -812,7 +818,9 @@ async def slogo(client, message):
     event = await edit_or_reply(message, "`Processing.....`")
     text = get_text(message)
     if not text:
-        await event.edit("Invalid Command Syntax, Please Check Help Menu To Know More!")
+        await event.edit(
+            "`Please Give Me A Valid Input. You Can Check Help Menu To Know More!`"
+        )
         return
     img = Image.open("./bot_utils_files/image_templates/yellow_bg_for_logo.jpg")
     draw = ImageDraw.Draw(img)
@@ -863,7 +871,9 @@ async def adityalogo(client, message):
     event = await edit_or_reply(message, "`Processing.....`")
     text = get_text(message)
     if not text:
-        await event.edit("Invalid Command Syntax, Please Check Help Menu To Know More!")
+        await event.edit(
+            "`Please Give Me A Valid Input. You Can Check Help Menu To Know More!`"
+        )
         return
     img = Image.open("./bot_utils_files/image_templates/black_blank_image.jpg")
     draw = ImageDraw.Draw(img)
@@ -895,7 +905,8 @@ async def adityalogo(client, message):
     await event.delete()
     if os.path.exists(file_name):
         os.remove(file_name)
-        
+
+
 @friday_on_cmd(
     ["stcr"],
     cmd_help={
@@ -940,16 +951,15 @@ async def ujwal_s_ticker(client, message):
     for files in (font_, ok):
         if files and os.path.exists(files):
             os.remove(files)
-    
+
 
 def choose_random_font():
     fonts_ = [
-        'https://github.com/DevsExpo/FONTS/raw/main/Ailerons-Typeface.otf',
-        'https://github.com/DevsExpo/FONTS/raw/main/Toxico.otf',
-        'https://github.com/DevsExpo/FONTS/raw/main/againts.otf',
-        'https://github.com/DevsExpo/FONTS/raw/main/go3v2.ttf',
-        'https://github.com/DevsExpo/FONTS/raw/main/vermin_vibes.ttf'
+        "https://github.com/DevsExpo/FONTS/raw/main/Ailerons-Typeface.otf",
+        "https://github.com/DevsExpo/FONTS/raw/main/Toxico.otf",
+        "https://github.com/DevsExpo/FONTS/raw/main/againts.otf",
+        "https://github.com/DevsExpo/FONTS/raw/main/go3v2.ttf",
+        "https://github.com/DevsExpo/FONTS/raw/main/vermin_vibes.ttf",
     ]
     random_s = random.choice(fonts_)
     return wget.download(random_s)
-    

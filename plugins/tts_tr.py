@@ -33,7 +33,10 @@ async def gibspeech(client, message):
     stime = time.time()
     event = await edit_or_reply(message, "`Processing...`")
     ttslang = get_text(message)
-    if not message.reply_to_message or not message.reply_to_message.text:
+    if not message.reply_to_message:
+        await event.edit("`Reply To Message To Convert Into Speech!`")
+        return
+    if not message.reply_to_message.text:
         await event.edit("`Reply To Message To Convert Into Speech!`")
         return
     text = message.reply_to_message.text
@@ -74,16 +77,22 @@ async def tr_pls(client, message):
     lang = get_text(message)
     if not lang:
         lang = "en"
-    if not message.reply_to_message and not message.reply_to_message.text:
+    if not message.reply_to_message:
+        await event.edit("`Reply To Message To Translate It!`")
+        return
+    if not message.reply_to_message.text:
         await event.edit("`Reply To Message To Translate It!`")
         return
     text = message.reply_to_message.text
     translator = google_translator()
-    source_lan = detect(text)
+    try:
+        source_lan = translator.detect(text)[1]
+    except:
+        source_lan = translator.detect(text)[0]
     if not LANGUAGES.get(lang):
         await event.edit("`Language Not Supported.`")
         return
-    transl_lan = LANGUAGES.get(lang, 'English')
+    transl_lan = LANGUAGES.get(lang, "English")
     translated = translator.translate(text, lang_tgt=lang)
     tr_text = f"""**Source ({source_lan.capitalize()})**:
 `{text}`
